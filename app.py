@@ -1,4 +1,3 @@
-#import anthropic
 from streamlit_tags import st_tags
 import boto3
 import json
@@ -32,7 +31,7 @@ st.set_page_config(
 )
 st.title("LinkedIn Generator")
 st.markdown(
-    "This app generates LinkedIn Posts using Anthropic's Claude"
+    "This app generates LinkedIn Posts using Amazon Bedrock and Open LLMs"
 )
 
 user_textbox = st.text_area('Enter Content or URL', height=50)
@@ -57,8 +56,8 @@ with st.sidebar:
     with st.expander("Advanced"):
         select_model = st.radio(
         "Model",
-        ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307", "claude-2.1", "claude-2.0", "claude-instant-1.2", "meta.llama2-70b-chat-v1"],
-        index=6)
+        ["meta.llama2-70b-chat-v1"],
+        index=0)
 
         temperature_selector = st.slider('Temperature', 0.0, 1.0, 0.3, 0.1)
 
@@ -84,14 +83,14 @@ def get_response(USER_PROMPT):
         "top_p": 0.9
     }
     body = json.dumps(payload)
-    #st.write('body:' + body)
+    
     response = bedrock.invoke_model(
         modelId=select_model,
         accept="application/json",
         contentType="application/json",
         body=body
     )
-    #st.write('s+u:' + SYSTEM_PROMPT + ' ' + USER_PROMPT)
+    
     return json.loads(response.get("body").read())
 
 if st.button("Generate"):
@@ -99,13 +98,11 @@ if st.button("Generate"):
         st.warning("Please enter a text.", icon = "⚠️")
     else:
         with st.spinner('Generating post...'):
-            #st.write('u '+ USER_PROMPT)
             prompt = get_response(USER_PROMPT)
             if prompt:
                 st.success('Done!')
                 response_body = prompt
                 generation = response_body['generation']
-            #st.code(prompt, language="python")
             st.text_area("", value=generation, height=300)
 
 footer="""<style>
