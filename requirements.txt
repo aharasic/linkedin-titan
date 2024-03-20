@@ -1,4 +1,3 @@
 boto3
-streamlit_analytics
 datetime
 streamlit_tags

@@ -2,16 +2,14 @@ from streamlit_tags import st_tags
 import boto3
 import json
 import streamlit as st
-import streamlit_analytics
 import datetime
+import logging
 
 # Variables
 now = datetime.datetime.now()
 CURRENTDATE = now.strftime("%Y-%m-%d %H:%M:%S")
 NUMPARAGRAPH = 1
-NUMWORDS = 1000
-
-streamlit_analytics.start_tracking()
+NUMWORDS = 100
 
 bedrock = boto3.client(service_name="bedrock-runtime")
 
@@ -56,54 +54,76 @@ with st.sidebar:
     with st.expander("Advanced"):
         select_model = st.radio(
         "Model",
-        ["meta.llama2-70b-chat-v1"],
+        #["meta.llama2-70b-chat-v1", "amazon.titan-text-express-v1"],
+        ["amazon.titan-text-express-v1"],
         index=0)
 
         temperature_selector = st.slider('Temperature', 0.0, 1.0, 0.3, 0.1)
 
 SYSTEM_PROMPT = f"""
-Imagine you are an expert LinkedIn post writer that knows how to optimize hashtags to increase views. 
-You are tasked to write a LinkedIn post using the content at the end of this prompt. 
-Make sure to review all the text in the content and take the most relevant parts to write the post.
-
-Instructions:
-Audience = young startup founders and investors
-Tone = if the content is sad, use a sad tone. If the content is possitive use a positive tone.
-Size of response = {NUMPARAGRAPH} paragraph, no more than {NUMWORDS} words
-Language = use the {select_language} language to create the content
-Hashtags: Add hashtags from this list {keywords}. Add additional hashtags from the content.
-Date: Today date is {CURRENTDATE}
-"""
-
-def get_response(USER_PROMPT): 
-    payload = {
-        "prompt": SYSTEM_PROMPT + ' ' + USER_PROMPT,
-        "max_gen_len": NUMWORDS,
-        "temperature": temperature_selector,
-        "top_p": 0.9
-    }
-    body = json.dumps(payload)
+    Imagine you are an expert LinkedIn post writer that knows how to optimize hashtags to increase views. 
     
+    Write an appealing linkedin post with these instructions:
+    - Make sure the response is not more than {NUMPARAGRAPH} paragraph, and no more than {NUMWORDS} words
+    - Use the {select_language} language to create the content
+    - Add linkedin hashtags from this list {keywords}
+    - Add additional linkedin hashtags from the content.
+    - Today date is {CURRENTDATE}
+    - Use content provided in <content> xml tags
+    """
+
+class ImageError(Exception):
+    "Custom exception for errors returned by Amazon &titan-text-express; model"
+
+    def __init__(self, message):
+        self.message = message
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+def get_response(body): 
+    #accept = "application/json"
+    content_type = "application/json"
+
     response = bedrock.invoke_model(
-        modelId=select_model,
-        accept="application/json",
-        contentType="application/json",
-        body=body
+        body=body, modelId=select_model, contentType=content_type
     )
-    
-    return json.loads(response.get("body").read())
+    response_body = json.loads(response.get("body").read())
+
+    finish_reason = response_body.get("error")
+
+    if finish_reason is not None:
+        raise ImageError(f"Text generation error. Error is {finish_reason}")
+
+    logger.info(
+        "Successfully generated text with Amazon &titan-text-express; model %s", select_model)
+
+    return response_body
+
+prompt = USER_PROMPT + ' ' + SYSTEM_PROMPT
+
+body = json.dumps({
+            "inputText": prompt,
+            "textGenerationConfig": {
+                "maxTokenCount": 500,
+                "stopSequences": [],
+                "temperature": temperature_selector,
+                "topP": 1
+            }
+        })
 
 if st.button("Generate"):
     if not USER_PROMPT:
         st.warning("Please enter a text.", icon = "⚠️")
     else:
         with st.spinner('Generating post...'):
-            prompt = get_response(USER_PROMPT)
-            if prompt:
+            response_body = get_response(body)
+            if response_body:
                 st.success('Done!')
-                response_body = prompt
-                generation = response_body['generation']
-            st.text_area("", value=generation, height=300)
+                result = response_body['results']
+                generation = result[0]
+                output = generation['outputText']
+            st.text_area("", value=output, height=300)
 
 footer="""<style>
 a:link , a:visited{
@@ -132,6 +152,5 @@ text-align: center;
 <p>Developed by harasic@</p>
 </div>
 """
-st.markdown(footer, unsafe_allow_html = True)
 
-streamlit_analytics.stop_tracking()
+st.markdown(footer, unsafe_allow_html = True)
