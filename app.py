@@ -37,14 +37,14 @@ USER_PROMPT = '<content>' + user_textbox + '</content>'
 
 with st.sidebar:
     with st.expander("Options", expanded = True):
-        keywords = st_tags(
-        label='Enter Hashtags',
-        text='Press enter to add more',
-        value=['#aws', '#awscloud', '#awsstartups', '#startups'],
-        suggestions=['#vc', '#venturecapital', '#innovation', 
-                    '#entrepreneurship', '#chile', '#argentina'],
-        maxtags = 10,
-        key='1')
+        #keywords = st_tags(
+        #label='Enter Hashtags',
+        #text='Press enter to add more',
+        #value=['#aws', '#awscloud', '#awsstartups', '#startups'],
+        #suggestions=['#vc', '#venturecapital', '#innovation', 
+        #            '#entrepreneurship', '#chile', '#argentina'],
+        #maxtags = 10,
+        #key='1')
 
         select_language = st.radio(
         "Language",
@@ -66,7 +66,7 @@ SYSTEM_PROMPT = f"""
     Write an appealing linkedin post with these instructions:
     - Make sure the response is not more than {NUMPARAGRAPH} paragraph, and no more than {NUMWORDS} words
     - Use the {select_language} language to create the content
-    - Add linkedin hashtags from this list {keywords}
+    - Add linkedin hashtags from this list keywords
     - Add additional linkedin hashtags from the content.
     - Today date is {CURRENTDATE}
     - Use content provided in <content> xml tags
