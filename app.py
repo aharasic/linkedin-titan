@@ -1,4 +1,3 @@
-from streamlit_tags import st_tags
 import boto3
 import json
 import streamlit as st
@@ -11,7 +10,7 @@ CURRENTDATE = now.strftime("%Y-%m-%d %H:%M:%S")
 NUMPARAGRAPH = 1
 NUMWORDS = 100
 
-bedrock = boto3.client(service_name="bedrock-runtime")
+bedrock = boto3.client(service_name="bedrock-runtime", region_name='us-east-1')
 
 if 'last_time' not in st.session_state:
     st.session_state['last_time'] = now
