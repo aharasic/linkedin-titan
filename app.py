@@ -10,7 +10,8 @@ CURRENTDATE = now.strftime("%Y-%m-%d %H:%M:%S")
 NUMPARAGRAPH = 1
 NUMWORDS = 100
 
-bedrock = boto3.client(service_name="bedrock-runtime", region_name='us-east-1')
+bedrock = boto3.client(service_name="bedrock-runtime", region_name='us-east-1', aws_access_key_id=st.secrets["AWS_ACCESS_KEY_ID"],
+         aws_secret_access_key=st.secrets["AWS_SECRET_ACCESS_KEY"])
 
 if 'last_time' not in st.session_state:
     st.session_state['last_time'] = now
